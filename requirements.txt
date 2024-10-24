@@ -1,0 +1,7 @@
+langchain-community
+langchain-openai
+faiss-cpu  # or faiss-gpu if applicable
+langchain-text-splitters
+python-dotenv  # Optional, for environment variable management
+PyPDF2
+tiktoken
