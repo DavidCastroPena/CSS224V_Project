@@ -1,6 +1,9 @@
 import torch
+import json
 from qdrant_client import QdrantClient
 from transformers import AutoTokenizer, AutoModel
+import re
+import datetime
 
 # Initialize Qdrant client
 qdrant_client = QdrantClient(host="localhost", port=6333)
@@ -31,17 +34,42 @@ def query_qdrant(query_text, top_k=5):
 
     return search_results
 
-# Example query
+# Function to save query results to a JSON file
+def save_query_results(query_text, results):
+    # Sanitize query text to create a valid filename
+    sanitized_query = re.sub(r'[^a-zA-Z0-9_]', '_', query_text)[:50]
+    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = f"query_results_{sanitized_query}_{timestamp}.json"
+
+    # Prepare data to save
+    formatted_results = []
+    for i, result in enumerate(results):
+        formatted_results.append({
+            "Score": result.score,
+            "PaperID": result.payload.get("paper_id"),
+            "ChunkText": result.payload.get("chunk_text"),
+            "ChunkID": result.payload.get("chunk_id"),
+            "ID": result.id
+        })
+
+    # Save results as JSON
+    with open(filename, 'w') as file:
+        json.dump(formatted_results, file, indent=4)
+
+    print(f"Query results saved to {filename}")
+
+# Example usage
 query_text = "banking workers"
 results = query_qdrant(query_text, top_k=3)
 
-# Display the results
+# Display and save the results
 for i, result in enumerate(results):
     print(f"Result {i+1}:")
-    print(f"Score: {result.score}")  # Access score with dot notation
-    print(f"Paper ID: {result.payload.get('paper_id')}")  # Payload is a dictionary, so use get()
-    print(f"Chunk Text: {result.payload.get('chunk_text')[:200]}...")  # Truncate for readability
+    print(f"Score: {result.score}")
+    print(f"Paper ID: {result.payload.get('paper_id')}")
+    print(f"Chunk Text: {result.payload.get('chunk_text')[:200]}...")
     print(f"Chunk ID: {result.payload.get('chunk_id')}")
     print(f"ID: {result.id}\n")
 
-
+# Save the results to a file
+save_query_results(query_text, results)
