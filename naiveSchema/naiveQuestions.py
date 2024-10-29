@@ -2,18 +2,22 @@ from pathlib import Path
 import json
 from openai import OpenAI
 import os
+from dotenv import load_dotenv
 from datetime import datetime
 
+load_dotenv()
+
+api_key = os.getenv("OPENAI_API_KEY")
 
 class QueryAnalyzer:
     def __init__(self):
         #Initialize the OpenAI client
-        self.client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+        self.client = OpenAI(api_key=api_key)
         if not self.client.api_key:
             raise ValueError("Please set the OPENAI_API_KEY environment variable")
         
         #Use the exact path where query_results exists
-        self.PROJECT_DIR = Path(r"C:\Users\engin\OneDrive\Desktop\Carpetas\STANFORD\fourthQuarter\CS224V\Project")
+        self.PROJECT_DIR = Path(r"..")
 
     def debug_directory_contents(self):
         """Debug function to list directory contents"""
@@ -83,21 +87,16 @@ class QueryAnalyzer:
             # Define the prompt for OpenAI
             prompt = f"""
             Based on the following excerpts from studies, generate a schema of comparison questions that would help compare findings, methodologies, and conclusions of these studies for a policymaker interested in evaluating interventions.
-            
-            Excerpts:
-            {context}
-            
-            Schema of comparison questions:
             """
 
             # Call OpenAI with the new API format
-            response = self.client.beta.chat. completions.create(
+            response = self.client.chat.completions.create(
                 model="gpt-3.5-turbo",
                 messages=[
-                    {"role": "system", "content": "You are a research assistant helping to analyze academic papers."},
-                    {"role": "user", "content": prompt}
+                    {"role": "system", "content": prompt},
+                    {"role": "user", "content": context}
                 ],
-                max_tokens=200,
+                max_tokens=300,
                 temperature=0.5
             )
 
