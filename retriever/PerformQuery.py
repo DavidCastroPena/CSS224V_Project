@@ -39,7 +39,7 @@ def save_query_results(query_text, results):
     # Sanitize query text to create a valid filename
     sanitized_query = re.sub(r'[^a-zA-Z0-9_]', '_', query_text)[:50]
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-    filename = f"query_results_{sanitized_query}_{timestamp}.json"
+    filename = f"../query_results_{sanitized_query}_{timestamp}.json"
 
     # Prepare data to save
     formatted_results = []

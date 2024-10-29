@@ -1,25 +1,27 @@
 import os
 import json
-from transformers import AutoTokenizer
 import PyPDF2
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+import tiktoken
+
 
 # Define the folder paths
-chunks_folder = "C:/Users/engin/OneDrive/Desktop/Carpetas/STANFORD/fourthQuarter/CS224V/Project/chunks"
-papers_folder = "C:/Users/engin/OneDrive/Desktop/Carpetas/STANFORD/fourthQuarter/CS224V/Project/papers"
+papers_folder = "../papers"
 
-# Initialize the tokenizer for chunking (GPT-2 tokenizer used as an example, you can adjust this)
-tokenizer = AutoTokenizer.from_pretrained("gpt2")
+
+# Define the model to count the tokens
+encoding = tiktoken.get_encoding("cl100k_base")
+encoding = tiktoken.encoding_for_model('gpt-4o-mini')
+
+# Initialize the RecursiveCharacterTextSplitter
+recur_text_splitter = RecursiveCharacterTextSplitter(
+    chunk_size=1500, chunk_overlap=50, separators=["\n\n", "\n", ".", ",", " ", ""]
+)
 
 # Function to split text into chunks ensuring each is less than 500 tokens and handling max token limit
-def chunk_text(text, max_tokens=500, model_max_length=1024):
-    tokens = tokenizer(text, return_tensors="pt", truncation=False).input_ids[0]
-    chunks = []
-    for i in range(0, len(tokens), max_tokens):
-        chunk = tokens[i:i + max_tokens]
-        chunk_text = tokenizer.decode(chunk, skip_special_tokens=True)
-        # Ensure the chunk doesn't exceed the model's max token length
-        if len(tokenizer(chunk_text, return_tensors="pt", max_length=model_max_length, truncation=True).input_ids[0]) <= model_max_length:
-            chunks.append(chunk_text)
+def chunk_text(text):
+    # Split the text into chunks
+    chunks = recur_text_splitter.split_text(text)
     return chunks
 
 # Function to extract text from a PDF file
@@ -32,8 +34,14 @@ def extract_text_from_pdf(pdf_path):
             text += page.extract_text()
     return text
 
+# Function to count tokens using tiktoken
+def count_openai_tokens(text, encoding_name = "cl100k_base"):
+    encoding = tiktoken.get_encoding(encoding_name)
+    num_tokens = len(encoding.encode(text))
+    return num_tokens
+
 # Define the output .jsonl file
-output_jsonl = "C:/Users/engin/OneDrive/Desktop/Carpetas/STANFORD/fourthQuarter/CS224V/Project/paper_chunks.jsonl"
+output_jsonl = "paper_chunk.jsonl"
 
 # Open the output file in write mode
 with open(output_jsonl, 'w') as outfile:
@@ -55,11 +63,11 @@ with open(output_jsonl, 'w') as outfile:
                     "id": f"{paper_id}_{i}",  # Unique chunk ID (paper_id_chunk_number)
                     "content_string": chunk,  # The chunked text
                     "article_title": paper_id,  # The title can be the paper ID or extracted separately
-                    "full_section_title": "Section",  # Placeholder for section title
+                    "full_section_title": "",  # Placeholder for section title
                     "block_type": "text",  # Since these are text chunks
                     "language": "en",  # Assuming all papers are in English
                     "last_edit_date": "2024-01-01",  # Optional; you can provide real data if available
-                    "num_tokens": len(tokenizer(chunk, return_tensors="pt").input_ids[0])  # Number of tokens in this chunk
+                    "num_tokens": count_openai_tokens(chunk)  # Number of tokens in this chunk
                 }
                 # Write the chunk as a JSON line in the output file
                 outfile.write(json.dumps(json_line) + "\n")
