@@ -6,7 +6,7 @@ import tiktoken
 
 
 # Define the folder paths
-papers_folder = "../papers"
+papers_folder = "./papers"
 
 
 # Define the model to count the tokens
@@ -15,7 +15,7 @@ encoding = tiktoken.encoding_for_model('gpt-4o-mini')
 
 # Initialize the RecursiveCharacterTextSplitter
 recur_text_splitter = RecursiveCharacterTextSplitter(
-    chunk_size=1500, chunk_overlap=50, separators=["\n\n", "\n", ".", ",", " ", ""]
+    chunk_size=1500, chunk_overlap=50, separators=[".", ",", " ", ""]
 )
 
 # Function to split text into chunks ensuring each is less than 500 tokens and handling max token limit
@@ -32,6 +32,11 @@ def extract_text_from_pdf(pdf_path):
         for page_num in range(len(reader.pages)):
             page = reader.pages[page_num]
             text += page.extract_text()
+
+    # Save the extracted text into a txt file
+    #with open("extracted_text.txt", "w") as text_file:
+    #    text_file.write(text)
+
     return text
 
 # Function to count tokens using tiktoken
