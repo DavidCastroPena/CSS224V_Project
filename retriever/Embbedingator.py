@@ -6,7 +6,7 @@ from qdrant_client import QdrantClient
 from qdrant_client.models import PointStruct
 
 #Path
-jsonl_file_path = "../paper_chunk.jsonl"
+jsonl_file_path = "./paper_chunk.jsonl"
 
 #Initialize the Qdrant Client (assuming Qdrant is running locally)
 qdrant_client = QdrantClient(host="localhost", port=6333)

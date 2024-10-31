@@ -1,0 +1,5 @@
+[
+"What are the key findings of your research on banking challenges and how do they compare to other studies in the field?",
+"What methodologies did you employ to analyze banking challenges and how do they differ from those used in similar research?",
+"What conclusions did you draw from your study on banking challenges and how do they contrast with the conclusions of other policy and econometric papers?"
+]
