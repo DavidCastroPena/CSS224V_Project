@@ -51,3 +51,5 @@ tqdm==4.66.6
 transformers==4.45.2
 typing_extensions==4.12.2
 urllib3==2.2.3
+google-generative-ai==0.1.0
+

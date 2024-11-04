@@ -1,0 +1,11 @@
+1. **Methodological Distinction:** How does the paper's "quasi-experimental regression discontinuity design" differ from other methodologies used in the banking challenges literature, and what implications does this have for the reliability and generalizability of its findings?
+
+2. **Unique Findings:** What specific findings from the paper stand out as distinctive from the broader literature on banking challenges, particularly those related to the impact of financial inclusion on economic outcomes?
+
+3. **Novel Conclusions:** Does the paper draw any conclusions regarding the effectiveness of specific banking initiatives or policies that are not commonly discussed in other studies on banking challenges, and what are the theoretical or practical implications of these conclusions?
+1. How does the paper's methodology differ in its approach to measuring the causal impact of bank expansion on firm dynamics compared to other studies, and what are the implications of these methodological differences for interpreting the findings?
+2. While the paper highlights the positive effects of bank expansion on firm entry and growth, are there specific aspects of the methodology or sample characteristics that may limit the generalizability of these findings to different contexts or time periods?
+3. The paper suggests that the impact of bank expansion on firm dynamics varies across different types of banks. Are there specific methodological approaches or analytical techniques employed in the paper that allow for this level of granularity in the analysis, and how could these approaches be applied to further explore the heterogeneity of bank effects?
+1. How does the paper's methodology differ from other studies on financial inclusion in India, particularly in terms of its focus on embedding and the use of machine learning techniques?
+2. What are the unique findings of the paper that emerge from its embedding-based approach, and how do they challenge or complement existing knowledge on financial inclusion in India?
+3. How do the paper's conclusions on the role of embedding in promoting financial inclusion differ from other studies, and what implications do these conclusions have for future research and policy interventions?

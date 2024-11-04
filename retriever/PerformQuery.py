@@ -59,7 +59,7 @@ def save_query_results(query_text, results):
     print(f"Query results saved to {filename}")
 
 # Example usage
-query_text = "banking challenges"
+query_text = "financial inclusion and banking challenges"
 results = query_qdrant(query_text, top_k=10)
 
 # Display and save the results

@@ -1,70 +1,85 @@
 from pathlib import Path
 import json
-from openai import OpenAI
 import os
 from dotenv import load_dotenv
 from datetime import datetime
 import google.generativeai as genai
 import PyPDF2
+import random
+import torch
+from transformers import AutoTokenizer, AutoModel
+from sklearn.metrics.pairwise import cosine_similarity
+import numpy as np
 import ast
 
+# Define the correct path to the query results and papers directory
+query_results_path = r"C:/Users/engin/OneDrive/Desktop/Carpetas/STANFORD/fourthQuarter/CS224V/Project/query_results_banking_challenges_20241030_142254.json"
+papers_dir = r"C:/Users/engin/OneDrive/Desktop/Carpetas/STANFORD/fourthQuarter/CS224V/Project/papers"
 
 load_dotenv()
-
-open_ai_api_key = os.getenv("OPENAI_API_KEY")
 gemini_api_key = os.getenv("GEMINI_API_KEY")
+
+class PaperEmbeddingAnalyzer:
+    def __init__(self):
+        # Load a pretrained BERT model and tokenizer specialized in policy/economics
+        self.tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased")  # hypothetical model
+        self.model = AutoModel.from_pretrained("bert-base-uncased")
+    
+    def embed_text(self, text):
+        """Generate embeddings for a given text."""
+        inputs = self.tokenizer(text, return_tensors="pt", truncation=True, padding=True, max_length=512)
+        with torch.no_grad():
+            outputs = self.model(**inputs)
+        return outputs.last_hidden_state.mean(dim=1)  # Mean pooling of token embeddings
+
+    def sample_and_embed_section(self, section_text, iterations=4, sample_size=3):
+        """Sample sentences and calculate cosine similarities to identify section's general idea."""
+        sentences = section_text.split('.')
+        accumulated_embeddings = []
+        
+        for _ in range(iterations):
+            sample_sentences = random.sample(sentences, sample_size)
+            sample_text = ' '.join(sample_sentences)
+            embedding = self.embed_text(sample_text)
+            
+            # Calculate similarity if we have previous embeddings
+            if accumulated_embeddings:
+                similarities = [cosine_similarity(embedding, prev_emb) for prev_emb in accumulated_embeddings]
+                avg_similarity = np.mean(similarities)
+                print(f"Avg Cosine Similarity at Iteration {_+1}: {avg_similarity}")
+            
+            accumulated_embeddings.append(embedding)
+            
+        # Average the accumulated embeddings for the final section representation
+        section_embedding = torch.mean(torch.stack(accumulated_embeddings), dim=0)
+        return section_embedding
+
+    def analyze_paper(self, abstract, summary, findings):
+        """Extract embeddings for key sections and combine them."""
+        abstract_emb = self.sample_and_embed_section(abstract)
+        summary_emb = self.sample_and_embed_section(summary)
+        findings_emb = self.sample_and_embed_section(findings)
+
+        # Combine section embeddings to represent the full paper
+        combined_embedding = torch.mean(torch.stack([abstract_emb, summary_emb, findings_emb]), dim=0)
+        return combined_embedding
 
 
 class QueryAnalyzer:
-    def __init__(self):
-        #Initialize the OpenAI client
-        self.client = OpenAI(api_key=open_ai_api_key)
-        if not self.client.api_key:
-            raise ValueError("Please set the OPENAI_API_KEY environment variable")
-        
-        #Use the exact path where query_results exists
+    def __init__(self, embedding_analyzer):
+        # Set up Gemini API with specified model and embedding analyzer
+        genai.configure(api_key=gemini_api_key)
+        self.model = genai.GenerativeModel('gemini-pro')
+        self.embedding_analyzer = embedding_analyzer
         self.PROJECT_DIR = Path(r".")
 
-    def debug_directory_contents(self):
-        """Debug function to list directory contents"""
-        print("\nDebugging Directory Contents:")
-        print(f"Checking directory: {self.PROJECT_DIR}")
-        print("Files in directory:")
-        for item in self.PROJECT_DIR.iterdir():
-            print(f"- {item.name}")
-            if item.is_dir():
-                print("  Subdirectory contents:")
-                try:
-                    for subitem in item.iterdir():
-                        print(f"  - {subitem.name}")
-                except Exception as e:
-                    print(f"  Error reading subdirectory: {e}")
-
     def get_latest_query_results_file(self):
-        """Find the most recent query results file."""
-        try:
-            # First try looking in the main directory
-            files = list(self.PROJECT_DIR.glob("query_results*.json"))
-            
-            if not files:
-                # If not found, try looking in a query_results subdirectory
-                query_results_dir = self.PROJECT_DIR / "query_results"
-                if query_results_dir.exists():
-                    files = list(query_results_dir.glob("*.json"))
-            
-            if not files:
-                self.debug_directory_contents()
-                print("No query results JSON files found.")
-                return None
-            
-            # Sort files by modification time in descending order
-            latest_file = max(files, key=lambda f: f.stat().st_mtime)
-            print(f"Found latest file: {latest_file}")
-            return latest_file
-        
-        except Exception as e:
-            print(f"Error accessing directory: {e}")
-            self.debug_directory_contents()
+        """Directly use the specified query_results_path."""
+        if os.path.exists(query_results_path):
+            print(f"Using specified query results file: {query_results_path}")
+            return query_results_path
+        else:
+            print(f"Specified query results file not found at: {query_results_path}")
             return None
 
     def load_relevant_papers(self, filename):
@@ -80,37 +95,9 @@ class QueryAnalyzer:
         except Exception as e:
             print(f"Error loading query results: {e}")
             return None
-    
 
-    def generate_comparison_questions(self, topic, question_number, relevant_papers_ids):
-        """Generate comparison questions using OpenAI API."""
-        if not relevant_papers_ids:
-            return "No query results available to generate questions."
-
-        try:
-            prompt = "Create {} questions that can be allow a thorough comparison of findings, methodologies, and conclusions among policy and econometric papers on the topic of {}. Note that the questions will be individually asked to each paper. Format the output as a python list of strings that looks like this [question 1, question 2, ...] in which each element only contains the question, no enumeration. Make sure that the output is a python list".format(question_number, topic)
-
-            
-            # Call OpenAI with the new API format
-            response = self.client.chat.completions.create(
-                model="gpt-3.5-turbo",
-                messages=[
-                    {"role": "system", "content": prompt}#,
-                    #{"role": "user", "content": context}
-                ],
-                max_tokens=300,
-                temperature=0.5
-            )
-
-            # Extract the generated questions from the response using the new format
-            questions = response.choices[0].message.content.strip()
-            return questions
-        
-        except Exception as e:
-            return f"Error generating questions: {e}"
-        
     def extract_text_from_pdf(self, paper_id):
-        pdf_path = f"./papers/{paper_id}.pdf"
+        pdf_path = os.path.join(papers_dir, f"{paper_id}.pdf")
         
         try:
             with open(pdf_path, "rb") as f:
@@ -123,71 +110,24 @@ class QueryAnalyzer:
         except FileNotFoundError:
             print(f"File {pdf_path} not found.")
             return ""
-        
-    def clean_json_string(self, json_string):
-        retString = json_string.rstrip()
-        if retString.endswith(")}"):
-            retString = retString[:-2] + retString[-1]
-        return retString
-        
-    def answer_question_gemini(self, questions, paper_text):
-        
-        genai.configure(api_key=gemini_api_key)
-        # GEMINI SET UP
-        generation_config = {
-            "temperature": 0,
-            "top_p": 0.95,
-            "top_k": 64,
-            "max_output_tokens": 8192,
-            "response_mime_type": "application/json",
-        }
 
-        # Generating the formatted list of questions
-        formatted_questions = "\n".join(f"{i+1}. {q}" for i, q in enumerate(questions))
-
-        # Creating the JSON schema
-        schema = "paper_json = {\n"
-        for question in questions:
-            question_key = question.lower().replace(" ", "_").replace("?", "")
-            schema += f'    "{question_key}": {{"type": "string"}},\n'
-        schema = schema.rstrip(",\n") + "\n}"
-
-        # Creating the prompt
-        prompt = f"""STEP 1 - Answer the following questions based on the provided paper below, respond using only the provided text and keep your answers concise and detailed.
-
-        {formatted_questions}
-
-        STEP 2 - Using this JSON schema, return a JSON with the answers to the questions previously retrieved:
-        {schema}
-
-        If the provided paper contains no data to respond to a question, leave the field as an empty string and don't make up any data.
-        """
-
-        model = genai.GenerativeModel(
-            model_name="gemini-1.5-flash",
-            generation_config=generation_config,
-            system_instruction=prompt,
-        )
-        response = model.generate_content(paper_text)
-
-        response_cleaned = self.clean_json_string(response.text)
-
-        # Use json.loads to convert the cleaned string into a dictionary
-        try:
-            response_json = json.loads(response_cleaned)
-        except json.JSONDecodeError as e:
-            print(f"Error decoding JSON: {e}")
-            return {}
-
-        return response_json
-                
+    def generate_comparison_questions(self, paper_embeddings, topic, question_number=3):
+        """Generate comparison questions using cosine similarity of embeddings."""
+        questions = []
+        for idx, (paper_id, embedding) in enumerate(paper_embeddings.items()):
+            prompt = f"Given the topic of {topic} and the similarities across papers, create {question_number} questions that explore unique aspects of the methodologies, findings, or conclusions in paper '{paper_id}' based on embedding-based similarities."
+            response = self.model.generate_content(
+                prompt,
+                generation_config={"temperature": 0.7, "max_output_tokens": 500}
+            )
+            if response and response.text.strip():
+                questions.append(response.text.strip())
+            else:
+                questions.append("Error generating questions.")
+        return questions
 
     def run(self):
         """Main function to load results and generate questions."""
-        print(f"\nStarting script...")
-        print(f"\nLooking for query results in: {self.PROJECT_DIR}")
-        
-        # Find the latest query results file
         latest_file = self.get_latest_query_results_file()
         
         if not latest_file:
@@ -200,55 +140,44 @@ class QueryAnalyzer:
         relevant_papers_ids = self.load_relevant_papers(latest_file)
         if not relevant_papers_ids:
             return
+
+        # Step 1: Process each paper's sections to create embeddings
+        paper_embeddings = {}
+        for paper_id in relevant_papers_ids:
+            print(f"Processing paper {paper_id}...")
+            paper_text = self.extract_text_from_pdf(paper_id)
+            abstract, summary, findings = self.extract_sections(paper_text)
+            embedding = self.embedding_analyzer.analyze_paper(abstract, summary, findings)
+            paper_embeddings[paper_id] = embedding
         
+        # Step 2: Generate and save comparison questions
+        comparison_questions = self.generate_comparison_questions(paper_embeddings, topic="banking challenges")
         
-        # Generate comparison questions
-        print("\nGenerating and saving comparison questions for this topic...")
-        comparison_questions = self.generate_comparison_questions(topic = "banking challenges", question_number=3, relevant_papers_ids=relevant_papers_ids)
-        
-        # Save the generated questions
+        # Step 3: Save the generated questions to a file
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         questions_file = self.PROJECT_DIR / f"comparison_questions_{timestamp}.txt"
 
         try:
             with open(questions_file, 'w', encoding='utf-8') as f:
-                f.write(comparison_questions)
+                for question in comparison_questions:
+                    f.write(question + "\n")
             print(f"\nGenerated questions saved to: {questions_file}")
-            print("\nGenerated Comparison Questions:\n", comparison_questions)
         except Exception as e:
             print(f"\nError saving questions: {e}")
 
-        # Questions string to list
-        comparison_questions = ast.literal_eval(comparison_questions)
-        
-        final_json = {}
-
-        # Answer questions for each paper
-        for paper_id in relevant_papers_ids: 
-            print("\nTransforming paper {} in pdf to text ...".format(paper_id))
-            paper_text = self.extract_text_from_pdf(paper_id)
-            print("Answering questions for {}".format(paper_id))
-            
-            # Call the function to get the answers for the questions
-            answers = self.answer_question_gemini(comparison_questions, paper_text)
-            
-            # Add the answers to the final JSON dictionary under the paper_id
-            final_json[paper_id] = answers
-
-        # Specify the filename and path to save the JSON
-        output_path = os.path.join(os.getcwd(), "paper_answers.json")
-
-        # Save the final JSON to the current directory
-        with open(output_path, "w") as json_file:
-            json.dump(final_json, json_file, indent=4)
-
-        print(f"Output JSON saved at {output_path}")
-
-        
+    def extract_sections(self, paper_text):
+        """Extracts abstract, summary, and findings sections from paper text."""
+        # This would be refined to identify each section in actual implementation
+        # For simplicity, we're assuming these are roughly split into thirds here
+        abstract = paper_text[:len(paper_text)//3]
+        summary = paper_text[len(paper_text)//3:2*len(paper_text)//3]
+        findings = paper_text[2*len(paper_text)//3:]
+        return abstract, summary, findings
 
 
 def main():
-    analyzer = QueryAnalyzer()
+    embedding_analyzer = PaperEmbeddingAnalyzer()
+    analyzer = QueryAnalyzer(embedding_analyzer)
     analyzer.run()
 
 if __name__ == "__main__":
