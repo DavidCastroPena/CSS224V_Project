@@ -1,0 +1,15 @@
+# Ignore common virtual environment directories
+.env/
+.venv/
+venv/
+ENV/
+env/
+myenv/
+# Ignore virtual environments in subdirectories
+*/.env/
+*/.venv/
+*/venv/
+*/ENV/
+*/env/
+# Ignore your specific virtual environment named wikichat
+wikichat/
