@@ -59,8 +59,8 @@ def save_query_results(query_text, results):
     print(f"Query results saved to {filename}")
 
 # Example usage
-query_text = "banking challenges"
-results = query_qdrant(query_text, top_k=10)
+query_text = "I want to create a policy that fosters financial inclusion and economic growth in California. "
+results = query_qdrant(query_text, top_k=20)
 
 # Display and save the results
 for i, result in enumerate(results):

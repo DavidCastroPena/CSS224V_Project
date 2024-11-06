@@ -1,5 +1,0 @@
-[
-    "What data sources were utilized in the study to analyze banking challenges?",
-    "How did the researchers define and measure banking challenges in their analysis?",
-    "What policy recommendations or implications were drawn from the findings on banking challenges?"
-]

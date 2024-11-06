@@ -4,9 +4,7 @@ from openai import OpenAI
 import os
 from dotenv import load_dotenv
 from datetime import datetime
-import google.generativeai as genai
-import PyPDF2
-import ast
+
 
 
 load_dotenv()
@@ -15,7 +13,7 @@ open_ai_api_key = os.getenv("OPENAI_API_KEY")
 gemini_api_key = os.getenv("GEMINI_API_KEY")
 
 
-class QueryAnalyzer:
+class NaiveQuestions:
     def __init__(self):
         #Initialize the OpenAI client
         self.client = OpenAI(api_key=open_ai_api_key)
@@ -108,83 +106,11 @@ class QueryAnalyzer:
         
         except Exception as e:
             return f"Error generating questions: {e}"
-        
-    def extract_text_from_pdf(self, paper_id):
-        pdf_path = f"./papers/{paper_id}.pdf"
-        
-        try:
-            with open(pdf_path, "rb") as f:
-                reader = PyPDF2.PdfReader(f)
-                text = ""
-                for page_num in range(len(reader.pages)):
-                    page = reader.pages[page_num]
-                    text += page.extract_text()
-            return text
-        except FileNotFoundError:
-            print(f"File {pdf_path} not found.")
-            return ""
-        
-    def clean_json_string(self, json_string):
-        retString = json_string.rstrip()
-        if retString.endswith(")}"):
-            retString = retString[:-2] + retString[-1]
-        return retString
-        
-    def answer_question_gemini(self, questions, paper_text):
-        
-        genai.configure(api_key=gemini_api_key)
-        # GEMINI SET UP
-        generation_config = {
-            "temperature": 0,
-            "top_p": 0.95,
-            "top_k": 64,
-            "max_output_tokens": 8192,
-            "response_mime_type": "application/json",
-        }
 
-        # Generating the formatted list of questions
-        formatted_questions = "\n".join(f"{i+1}. {q}" for i, q in enumerate(questions))
-
-        # Creating the JSON schema
-        schema = "paper_json = {\n"
-        for question in questions:
-            question_key = question.lower().replace(" ", "_").replace("?", "")
-            schema += f'    "{question_key}": {{"type": "string"}},\n'
-        schema = schema.rstrip(",\n") + "\n}"
-
-        # Creating the prompt
-        prompt = f"""STEP 1 - Answer the following questions based on the provided paper below, respond using only the provided text and keep your answers concise and detailed.
-
-        {formatted_questions}
-
-        STEP 2 - Using this JSON schema, return a JSON with the answers to the questions previously retrieved:
-        {schema}
-
-        If the provided paper contains no data to respond to a question, leave the field as an empty string and don't make up any data.
-        """
-
-        model = genai.GenerativeModel(
-            model_name="gemini-1.5-flash",
-            generation_config=generation_config,
-            system_instruction=prompt,
-        )
-        response = model.generate_content(paper_text)
-
-        response_cleaned = self.clean_json_string(response.text)
-
-        # Use json.loads to convert the cleaned string into a dictionary
-        try:
-            response_json = json.loads(response_cleaned)
-        except json.JSONDecodeError as e:
-            print(f"Error decoding JSON: {e}")
-            return {}
-
-        return response_json
-                
 
     def run(self):
         """Main function to load results and generate questions."""
-        print(f"\nStarting script...")
+        print(f"\nStarting script to generate naive questions...")
         print(f"\nLooking for query results in: {self.PROJECT_DIR}")
         
         # Find the latest query results file
@@ -194,7 +120,7 @@ class QueryAnalyzer:
             print("\nNo query results available.")
             return
         
-        print(f"\nUsing latest query results file: {latest_file}")
+        print(f"\nUsing latest query results file to generate naive questions: {latest_file}")
 
         # Load set of relevant papers
         relevant_papers_ids = self.load_relevant_papers(latest_file)
@@ -203,7 +129,7 @@ class QueryAnalyzer:
         
         
         # Generate comparison questions
-        print("\nGenerating and saving comparison questions for this topic...")
+        print("\nGenerating and saving naive comparison questions for this topic...")
         comparison_questions = self.generate_comparison_questions(topic = "banking challenges", question_number=3, relevant_papers_ids=relevant_papers_ids)
         
         # Save the generated questions
@@ -218,38 +144,7 @@ class QueryAnalyzer:
         except Exception as e:
             print(f"\nError saving questions: {e}")
 
-        # Questions string to list
-        comparison_questions = ast.literal_eval(comparison_questions)
-        
-        final_json = {}
-
-        # Answer questions for each paper
-        for paper_id in relevant_papers_ids: 
-            print("\nTransforming paper {} in pdf to text ...".format(paper_id))
-            paper_text = self.extract_text_from_pdf(paper_id)
-            print("Answering questions for {}".format(paper_id))
-            
-            # Call the function to get the answers for the questions
-            answers = self.answer_question_gemini(comparison_questions, paper_text)
-            
-            # Add the answers to the final JSON dictionary under the paper_id
-            final_json[paper_id] = answers
-
-        # Specify the filename and path to save the JSON
-        output_path = os.path.join(os.getcwd(), "paper_answers.json")
-
-        # Save the final JSON to the current directory
-        with open(output_path, "w") as json_file:
-            json.dump(final_json, json_file, indent=4)
-
-        print(f"Output JSON saved at {output_path}")
-
+        return relevant_papers_ids
         
 
 
-def main():
-    analyzer = QueryAnalyzer()
-    analyzer.run()
-
-if __name__ == "__main__":
-    main()
