@@ -62,7 +62,7 @@ class QuestionAnswerer:
         schema = schema.rstrip(",\n") + "\n}"
 
         # Creating the prompt
-        prompt = f"""STEP 1 - Answer the following questions based on the provided paper below, respond using only the provided text and keep your answers concise and detailed.
+        prompt = f"""STEP 1 - Answer the following questions based on the provided paper below, respond using only the provided text and keep your answers concise and detailed. Express dates in the format Month, Year.
 
         {formatted_questions}
 
@@ -186,15 +186,3 @@ class QuestionAnswerer:
             json.dump(final_json, json_file, indent=4)
 
         print(f"Output JSON saved at {output_path}")
-
-
-
-
-def main():
-    
-    answer = QuestionAnswerer()
-    answer.run()
-
-
-if __name__ == "__main__":
-    main()

@@ -55,8 +55,8 @@ After successfully indexing the embeddings, you can query them by using the Perf
 python retriever/PerformQuery.py
 ```
 
-### 6. Excecute the answer_questions script
-After we performed the query, we are ready to execute the answer_questions script. This script does the following:
+### 6. Excecute the generateMemo script
+After we performed the query, we are ready to execute the generateMemo script. This script does the following:
 
 - Retrieves the relevant papers for the query.
 - Extracts text from the corresponding PDF files for each relevant paper.
@@ -65,7 +65,8 @@ After we performed the query, we are ready to execute the answer_questions scrip
 - Sends the extracted paper text and both naive and nuanced questions to the Gemini AI API to generate answers.
 - Collects the answers in JSON format, associating them with their respective paper IDs.
 - Saves the final answers in a paper_answers.json file.
+- Prompts gemini to generate memo in .md format
 
 ```
-python answer_questions.py
+python generateMemo.py
 ```

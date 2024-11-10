@@ -4,6 +4,7 @@ from openai import OpenAI
 import os
 from dotenv import load_dotenv
 from datetime import datetime
+import ast
 
 
 
@@ -132,6 +133,14 @@ class NaiveQuestions:
         print("\nGenerating and saving naive comparison questions for this topic...")
         comparison_questions = self.generate_comparison_questions(topic = "banking challenges", question_number=3, relevant_papers_ids=relevant_papers_ids)
         
+        # Add questions related to time and place
+        comparison_questions = ast.literal_eval(comparison_questions)
+        comparison_questions.insert(0, "When was this paper writen?")
+        comparison_questions.insert(0, "What is the main place where this paper is refering to?")
+        comparison_questions.insert(0, "What is the title of the paper?")
+
+        comparison_questions = str(comparison_questions)
+
         # Save the generated questions
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         questions_file = self.PROJECT_DIR / f"comparison_questions_{timestamp}.txt"

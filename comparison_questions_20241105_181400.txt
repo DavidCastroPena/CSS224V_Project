@@ -1,5 +1,0 @@
-[
-"What data sources were utilized in your research to analyze banking challenges?",
-"What econometric methods were employed to assess the impact of these challenges on the banking sector?",
-"How do the policy recommendations in your paper differ from other studies addressing banking challenges?"
-]
