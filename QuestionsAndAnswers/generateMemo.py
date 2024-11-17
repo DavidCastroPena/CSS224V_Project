@@ -23,7 +23,7 @@ class GenerateMemo:
         
         # GEMINI SET UP
         generation_config = {
-            "temperature": 0.2,
+            "temperature": 0.1,
             "top_p": 0.95,
             "top_k": 64,
             "max_output_tokens": 8192,
@@ -41,7 +41,7 @@ class GenerateMemo:
         """
 
         model = genai.GenerativeModel(
-            model_name="gemini-1.5-flash",
+            model_name="gemini-1.5-pro",
             generation_config=generation_config,
             system_instruction=prompt,
         )
@@ -66,7 +66,7 @@ def main():
     answer = QuestionAnswerer()
     answer.run()
 
-    query_text = "I want to create a policy that fosters financial inclusion and economic growth in California. "
+    query_text = "I am a county official in Mississippi and I want to create a policy that helps reduce child mortality in my County. I want to implement this from an education and awareness perspective."
     with open('paper_answers.json', 'r') as file:
         answer_list = json.load(file)
     

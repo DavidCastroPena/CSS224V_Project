@@ -131,7 +131,7 @@ class NaiveQuestions:
         
         # Generate comparison questions
         print("\nGenerating and saving naive comparison questions for this topic...")
-        comparison_questions = self.generate_comparison_questions(topic = "banking challenges", question_number=3, relevant_papers_ids=relevant_papers_ids)
+        comparison_questions = self.generate_comparison_questions(topic = "child mortality and education and awareness", question_number=3, relevant_papers_ids=relevant_papers_ids)
         
         # Add questions related to time and place
         comparison_questions = ast.literal_eval(comparison_questions)

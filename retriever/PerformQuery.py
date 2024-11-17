@@ -59,7 +59,7 @@ def save_query_results(query_text, results):
     print(f"Query results saved to {filename}")
 
 # Example usage
-query_text = "I want to create a policy that fosters financial inclusion and economic growth in California. "
+query_text = "I am a county official in Mississippi and I want to create a policy that helps reduce child mortality in my County. I want to implement this fromç perspective."
 results = query_qdrant(query_text, top_k=20)
 
 # Display and save the results

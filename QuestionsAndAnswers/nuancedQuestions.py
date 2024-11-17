@@ -12,6 +12,7 @@ from hdbscan import HDBSCAN
 from umap import UMAP
 from sklearn.decomposition import TruncatedSVD
 import yake
+import ast
 import time
 from google.api_core.exceptions import ResourceExhausted
 import glob
@@ -232,7 +233,7 @@ class NuancedQuestions:
             f"Topic: {topic}\n"
             f"Keywords: {', '.join(keywords)}\n"
             f"Embedding (used for context, not shown here): {paper_embedding}\n"
-            f"Format the output as a string that has the python list of strings format and looks like this [question 1, question 2, ...] in which each element only contains the question, no enumeration. Make sure that the output is only a string that looks like a python list"
+            f"Format the output as a string that has the python list of strings format and looks like this [question 1, question 2, ...] in which each element only contains the question, no enumeration. Make sure that the output is only a text that looks like a python list"
         )
         
         response = self._call_with_retry(lambda: self.model.generate_content(
@@ -241,8 +242,15 @@ class NuancedQuestions:
         ))
 
         if response and response.text.strip():
-            respone_clean = response.text.replace('\\"', '"').split('",\n"')
-            return [q.strip('"') for q in respone_clean]
+            respone_clean = response.text.strip("```python\n").strip("```")
+            questions_list = ast.literal_eval(respone_clean)
+            formatted_questions = [
+                 f"\"{q}\"" for q in questions_list
+            ]
+            final_result = f"[{', '.join(formatted_questions)}] \n"
+
+
+            return final_result
         else:
             return ["Error generating questions."]
 

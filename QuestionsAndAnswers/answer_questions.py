@@ -142,13 +142,12 @@ class QuestionAnswerer:
         # Read the file and find the matching paper_id
         with open(latest_file, 'r') as file:
             for line in file:
-                entry = json.loads(line.strip())
-                if entry['paper_id'] == paper_id:
-                    # Convert string representation of list to actual list
-                    questions_str = entry['questions'][0]
-                    # Parse the string to get the actual list
-                    questions_list = json.loads(questions_str)
-                    return questions_list
+                entry = json.loads(line.strip())  # Parse the line into a dictionary
+                if entry['paper_id'] == paper_id:  # Check if the paper_id matches
+                    # The 'questions' field is a string that represents a list, so parse it using json.loads
+                    questions_str = entry['questions'].strip()
+                    questions_list = json.loads(questions_str)  # Convert the JSON string into a list
+                    return questions_list  # Return the list of questions
                     
         raise ValueError(f"Paper ID '{paper_id}' not found in {latest_file}")
 
