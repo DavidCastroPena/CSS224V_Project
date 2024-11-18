@@ -1,80 +1,99 @@
 import os
-import json
 import PyPDF2
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-import tiktoken
 
 
-# Define the folder paths
-papers_folder = "./papers"
+class Chunkenizer:
+    def __init__(self, papers_folder):
+        """
+        Initialize the Chunkenizer with the specified papers folder.
+        Args:
+            papers_folder (str): Path to the folder containing the papers.
+        """
+        if not os.path.exists(papers_folder):
+            raise FileNotFoundError(f"The provided papers folder '{papers_folder}' does not exist.")
+        self.papers_folder = papers_folder
+        self.splitter = RecursiveCharacterTextSplitter(
+            chunk_size=1500,
+            chunk_overlap=50,
+            separators=[".", ",", " ", ""]
+        )
 
+    def process_file(self, file_path):
+        """
+        Process a file to extract and chunk its content.
+        Args:
+            file_path (str): Path to the file.
 
-# Define the model to count the tokens
-encoding = tiktoken.get_encoding("cl100k_base")
-encoding = tiktoken.encoding_for_model('gpt-4o-mini')
+        Returns:
+            list: A list of text chunks from the file.
+        """
+        if not os.path.exists(file_path):
+            raise FileNotFoundError(f"The file '{file_path}' does not exist.")
 
-# Initialize the RecursiveCharacterTextSplitter
-recur_text_splitter = RecursiveCharacterTextSplitter(
-    chunk_size=1500, chunk_overlap=50, separators=[".", ",", " ", ""]
-)
+        extension = os.path.splitext(file_path)[1].lower()
+        if extension == ".pdf":
+            return self._process_pdf(file_path)
+        elif extension == ".txt":
+            return self._process_txt(file_path)
+        else:
+            raise ValueError(f"Unsupported file type: {extension}")
 
-# Function to split text into chunks ensuring each is less than 500 tokens and handling max token limit
-def chunk_text(text):
-    # Split the text into chunks
-    chunks = recur_text_splitter.split_text(text)
-    return chunks
+    def _process_pdf(self, pdf_path):
+        """
+        Extract and chunk text from a PDF file.
+        Args:
+            pdf_path (str): Path to the PDF file.
 
-# Function to extract text from a PDF file
-def extract_text_from_pdf(pdf_path):
-    with open(pdf_path, "rb") as f:
-        reader = PyPDF2.PdfReader(f)
+        Returns:
+            list: A list of text chunks from the PDF.
+        """
         text = ""
-        for page_num in range(len(reader.pages)):
-            page = reader.pages[page_num]
-            text += page.extract_text()
+        with open(pdf_path, "rb") as f:
+            reader = PyPDF2.PdfReader(f)
+            for page in reader.pages:
+                text += page.extract_text()
+        return self.splitter.split_text(text)
 
-    # Save the extracted text into a txt file
-    #with open("extracted_text.txt", "w") as text_file:
-    #    text_file.write(text)
+    def _process_txt(self, txt_path):
+        """
+        Extract and chunk text from a TXT file.
+        Args:
+            txt_path (str): Path to the text file.
 
-    return text
+        Returns:
+            list: A list of text chunks from the TXT file.
+        """
+        with open(txt_path, "r", encoding="utf-8") as f:
+            text = f.read()
+        return self.splitter.split_text(text)
 
-# Function to count tokens using tiktoken
-def count_openai_tokens(text, encoding_name = "cl100k_base"):
-    encoding = tiktoken.get_encoding(encoding_name)
-    num_tokens = len(encoding.encode(text))
-    return num_tokens
+    def chunk_text(self, text):
+        """
+        Directly chunk a given text.
+        Args:
+            text (str): The text to be chunked.
 
-# Define the output .jsonl file
-output_jsonl = "paper_chunk.jsonl"
+        Returns:
+            list: A list of text chunks.
+        """
+        return self.splitter.split_text(text)
 
-# Open the output file in write mode
-with open(output_jsonl, 'w') as outfile:
-    # Loop through all PDF files in the papers folder
-    for paper_file in os.listdir(papers_folder):
-        if paper_file.endswith(".pdf"):
-            paper_id = paper_file.split(".")[0]  # Use the file name as the paper ID
-            pdf_path = os.path.join(papers_folder, paper_file)
 
-            # Extract text from the PDF
-            full_text = extract_text_from_pdf(pdf_path)
+if __name__ == "__main__":
+    print("Testing Chunkenizer functionality...")
 
-            # Chunk the extracted text
-            chunks = chunk_text(full_text)
+    # Example standalone usage
+    folder = input("Enter the path to your papers folder: ").strip()
+    chunkenizer = Chunkenizer(folder)
 
-            # Write each chunk to the JSONL file with the appropriate metadata
-            for i, chunk in enumerate(chunks):
-                json_line = {
-                    "id": f"{paper_id}_{i}",  # Unique chunk ID (paper_id_chunk_number)
-                    "content_string": chunk,  # The chunked text
-                    "article_title": paper_id,  # The title can be the paper ID or extracted separately
-                    "full_section_title": "",  # Placeholder for section title
-                    "block_type": "text",  # Since these are text chunks
-                    "language": "en",  # Assuming all papers are in English
-                    "last_edit_date": "2024-01-01",  # Optional; you can provide real data if available
-                    "num_tokens": count_openai_tokens(chunk)  # Number of tokens in this chunk
-                }
-                # Write the chunk as a JSON line in the output file
-                outfile.write(json.dumps(json_line) + "\n")
+    file_name = input("Enter the name of a file in the folder: ").strip()
+    file_path = os.path.join(folder, file_name)
 
-print(f"Chunks successfully saved to {output_jsonl}")
+    try:
+        chunks = chunkenizer.process_file(file_path)
+        print(f"Generated {len(chunks)} chunks for '{file_name}'.")
+        for i, chunk in enumerate(chunks[:5]):  # Display first 5 chunks as a sample
+            print(f"Chunk {i+1}: {chunk[:100]}...")
+    except Exception as e:
+        print(f"Error: {e}")
