@@ -137,7 +137,7 @@ if __name__ == "__main__":
 
     # Example query
     query_text = "I want to create a policy that fosters financial inclusion and economic growth in California."
-
+    print("I'm using the wrong query")
     try:
         # Perform the query
         results = perform_query.query_qdrant(query_text, top_k=20)

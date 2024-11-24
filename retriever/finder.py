@@ -16,7 +16,7 @@ class Finder:
 
     def welcome_user(self):
         """Welcome the user and collect their policy situation (query)."""
-        print("Hello, I am PolicyChat! What about you telling me about your policy situation?")
+        print("Hello, I am PolicyChat! How can I help you with your policy situation?")
         self.query = input("Enter your policy situation: ").strip()
 
     def ask_analysis_option(self):
@@ -30,7 +30,7 @@ class Finder:
 
     def set_papers_folder(self):
         """Ask the user for the location of their papers folder."""
-        self.papers_folder = input("\nPlease provide the full path to your papers folder: ").strip()
+        self.papers_folder = input("\nPlease provide the path to your papers folder: ").strip()
         if not os.path.exists(self.papers_folder):
             raise FileNotFoundError(f"The folder '{self.papers_folder}' does not exist.")
         print(f"Papers folder set to: {self.papers_folder}")

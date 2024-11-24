@@ -6,18 +6,27 @@ import requests
 from Chunkenizer import Chunkenizer
 from Embbedingator import Embbedingator
 from PerformQuery import PerformQuery
+from QuestionsAndAnswers.generateMemo import GenerateMemo
+from pathlib import Path 
+
 
 
 class Coordinator:
-    def __init__(self, user_inputs_file="user_inputs.json"):
+    def __init__(self):
         """
         Initialize the Coordinator with user inputs and pipeline components.
         Args:
             user_inputs_file (str): Path to the JSON file containing user inputs.
         """
-        # Load user inputs
-        with open(user_inputs_file, "r") as f:
-            self.user_inputs = json.load(f)
+        # Get the current script's directory
+        current_dir = Path(__file__).resolve().parent
+
+        # Navigate to the parent directory and then to the target file
+        file_path = current_dir.parent / "user_inputs.json"
+
+        # Open and load the JSON file
+        with open(file_path, "r") as json_file:
+            self.user_inputs = json.load(json_file)
 
         self.query = self.user_inputs["query"]
         self.papers_folder = self.user_inputs["papers_folder"]
@@ -26,7 +35,7 @@ class Coordinator:
         self.genie_api_url = "https://search.genie.stanford.edu/semantic_scholar"
 
         # Initialize components
-        self.chunkenizer = Chunkenizer(self.papers_folder)
+        self.chunkenizer = Chunkenizer(self.papers_folder)     
         self.embbedingator = Embbedingator()
         self.perform_query = PerformQuery()
 
@@ -38,7 +47,7 @@ class Coordinator:
         """
         chunks = []
         for paper in self.local_papers:
-            file_path = os.path.join(self.papers_folder, paper)
+            file_path = paper
             paper_chunks = self.chunkenizer.process_file(file_path)
             for chunk in paper_chunks:
                 chunks.append({"source": paper, "content": chunk})
@@ -49,6 +58,8 @@ class Coordinator:
         Fetch external papers from Genie API.
         Returns:
             list: List of external paper data including content.
+            list: List of all content.
+            dict: Dictionary where keys are document titles and values are the concatenated contents.
         """
         print("Retrieving external papers from Genie API...")
         payload = {
@@ -63,19 +74,32 @@ class Coordinator:
             response.raise_for_status()
             data = response.json()
             external_papers = []
+            all_contents = []
+            content_by_title = {}
 
             for result in data[0]["results"]:  # Adjusting to match the API response structure
+                title = result["document_title"]
+                content = result["content"]
+
                 external_papers.append({
-                    "title": result["document_title"],
-                    "content": result["content"],
+                    "title": title,
+                    "content": content,
                     "url": result["url"]
                 })
+                all_contents.append(content)
 
-            print(f"Retrieved {len(external_papers)} papers from Genie API.")
-            return external_papers
+                if title in content_by_title:
+                    content_by_title[title] += f" {content}"  # Append content with a space separator
+                else:
+                    content_by_title[title] = content
+
+            print(f"Retrieved {len(external_papers)} results from Genie API, which correspond to {len(content_by_title.keys())} paper_ids")
+            return external_papers, all_contents, content_by_title
+
         except requests.exceptions.RequestException as e:
             print(f"Error fetching external papers: {e}")
-            return []
+            return [], [], {}
+
 
     def process_external_papers(self, external_papers):
         """
@@ -156,6 +180,7 @@ class Coordinator:
         """
         Execute the pipeline based on user inputs.
         """
+        
         print("Processing local papers...")
         local_chunks = self.process_local_papers()
 
@@ -165,7 +190,8 @@ class Coordinator:
 
         if self.option == "2":
             print("Fetching and processing external papers...")
-            external_papers = self.fetch_external_papers()
+            external_papers, all_external_contents, content_by_title = self.fetch_external_papers()
+
             external_chunks = self.process_external_papers(external_papers)
 
             print("Calculating similarities for external papers...")
@@ -175,6 +201,16 @@ class Coordinator:
             print("Generating combined report...")
             combined_results = local_results + external_results
             self.save_results(combined_results, "combined_report", include_url=True)
+        
+        
+        # Generate memo
+        memo = GenerateMemo()
+
+
+
+        # Extract the 'query' field
+        user_query = self.user_inputs.get("query")
+        memo.run(all_external_contents, content_by_title, user_query)
 
 
 if __name__ == "__main__":

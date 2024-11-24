@@ -1,0 +1,13 @@
+{
+    "query": "I am a county official in Mississippi and I want to create a policy that helps reduce child mortality in my County. I want to implement this from an education and awareness perspective",
+    "option": "2",
+    "papers_folder": "papers/",
+    "local_papers": [
+        "papers/ImpactofEducationFertilityandChildMortality.pdf",
+        "papers/CanPay-for-PerformanceImproveChildHealth.pdf",
+        "papers/ImprovingOutcomesforYoungChildren.pdf",
+        "papers/IntergenerationalPersistanceChildMortality.pdf",
+        "papers/TheRoleofCashTransferInImprovingChildHealth.pdf",
+        "papers/DoesHeadStartImproveChildrenLifeChances.pdf"
+    ]
+}
