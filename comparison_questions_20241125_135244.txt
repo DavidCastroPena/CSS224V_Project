@@ -1,0 +1,1 @@
+['What is the title of the paper?', 'What is the main place where this paper is refering to?', 'When was this paper writen?', 'What are the key findings of your study on financial inclusion policy?', 'What methodologies did you use to analyze the impact of financial inclusion policy?', 'What are the main conclusions drawn from your research on financial inclusion policy?']

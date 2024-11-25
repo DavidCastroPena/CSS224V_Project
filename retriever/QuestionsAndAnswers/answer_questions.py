@@ -45,9 +45,9 @@ class QuestionAnswerer:
         genai.configure(api_key=gemini_api_key)
         # GEMINI SET UP
         generation_config = {
-            "temperature": 0,
+            "temperature": 0.1,
             "top_p": 0.95,
-            "top_k": 64,
+            "top_k": 3,
             "max_output_tokens": 8192,
             "response_mime_type": "application/json",
         }
@@ -63,7 +63,8 @@ class QuestionAnswerer:
         schema = schema.rstrip(",\n") + "\n}"
 
         # Creating the prompt
-        prompt = f"""STEP 1 - Answer the following questions based on the provided paper below, respond using only the provided text and keep your answers concise and detailed. Express dates in the format Month, Year.
+        prompt = f"""STEP 1 - Answer the following questions based on the provided paper below. Respond using only the provided text, but adapt your answers to make them accessible to policymakers who might not be familiar with all technicalities. Use concise and detailed explanations, define technical terms and jargon in layman's terms and express dates in the format "Month, Year."
+
 
         {formatted_questions}
 
@@ -212,7 +213,7 @@ class QuestionAnswerer:
         filtered_out = 0
         for paper_id, questions in final_json.items():
             empty_count = sum(1 for answer in questions.values() if answer in (None, ""))
-            if empty_count < 5:
+            if empty_count < 3:
                 filtered_json[paper_id] = questions
             else:
                 filtered_out += 1

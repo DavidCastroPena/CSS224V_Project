@@ -20,6 +20,7 @@ class Coordinator:
         """
         # Get the current script's directory
         current_dir = Path(__file__).resolve().parent
+        print('hereeee', current_dir)
 
         # Navigate to the parent directory and then to the target file
         file_path = current_dir.parent / "user_inputs.json"

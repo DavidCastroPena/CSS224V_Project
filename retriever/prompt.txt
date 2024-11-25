@@ -1,4 +1,4 @@
-You are an AI agent tasked with producing a policy memo to assist the user in making an evidence-based, informed decision on the following: '{query}'. Your response should rely solely on the information provided below—external knowledge or sources are not permitted.
+You are an AI agent tasked with producing a policy memo to assist the user in making an evidence-based, informed decision on the following: '{query}'. The policy memo should present the information in an accessible way to policymakers, defining technical terms and jargon in layman's terms. Your response should rely solely on the information provided below—external knowledge or sources are not permitted.
 Please format your output as a markdown (.md) file with the following structure:
 
 Policy Memo Structure: 
