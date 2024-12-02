@@ -1,4 +1,4 @@
-from QuestionsAndAnswers.answer_questions import QuestionAnswerer
+from retriever.QuestionsAndAnswers.answer_questions import QuestionAnswerer
 import os
 from dotenv import load_dotenv
 from datetime import datetime
@@ -14,12 +14,21 @@ load_dotenv()
 gemini_api_key = os.getenv("GEMINI_API_KEY")
 
 class GenerateMemo:
-    def __init__(self):
+    def __init__(self,  message_output=None):
         self.answer_list = []   
+        self.message_output = message_output or print
+
+    def message(self, text):
+        """
+        Utility method to output messages
+        """
+        if self.message_output:
+            self.message_output(text)
 
     def generate_memo(self, query, questions_str):
 
-        print("Prompting Gemini to generate Memo...")
+        self.message("🙌🏼 Putting everything together ...") 
+        self.message("🤖 Generating policy memo that summarizes the findings ...")  
 
         genai.configure(api_key=gemini_api_key)
         
@@ -60,12 +69,13 @@ class GenerateMemo:
             file.write(response)
         
         print(f"Memo saved to {memo_file}")
+        self.message(f"🗃️ Memo file saved to {memo_file}.") 
 
         return 
     
     def run(self, all_external_content, content_by_title, user_query):
 
-        answer = QuestionAnswerer()
+        answer = QuestionAnswerer(message_output=self.message_output)
         answer.run(user_query=user_query, all_external_content= all_external_content, external_content_by_title =  content_by_title)
         
         current_dir = Path(__file__).resolve().parent
@@ -76,8 +86,10 @@ class GenerateMemo:
             answer_list = json.load(f)
         
         answer_list = str(answer_list)
+        
 
         self.answer_list = answer_list
+        print("Aaaaaanswer", self.answer_list)
 
         try:
             # Define the directory containing the files

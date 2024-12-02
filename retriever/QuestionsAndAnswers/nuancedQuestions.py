@@ -191,7 +191,9 @@ class NuancedQuestions:
                     most_recent_file = file
 
         # Store the most recent path in query_results_path
+
         self.query_results_path = most_recent_file
+        print("this queryyyy", self.query_results_path)
 
     def load_relevant_papers(self, filename):
         """Load query results from a JSONL file and extract unique sources."""
@@ -204,6 +206,7 @@ class NuancedQuestions:
             
             # Extract unique sources
             unique_sources = {entry["Source"] for entry in query_results}
+            print("unique sources: ", unique_sources)
             print(f"Number of relevant sources found: {len(unique_sources)}")
             
             return unique_sources

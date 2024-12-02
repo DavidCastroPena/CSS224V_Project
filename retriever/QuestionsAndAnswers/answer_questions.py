@@ -6,8 +6,8 @@ from dotenv import load_dotenv
 import ast
 import glob
 from pathlib import Path  # Make sure Path is imported
-from QuestionsAndAnswers.naiveQuestions import NaiveQuestions
-from QuestionsAndAnswers.nuancedQuestions import PaperEmbeddingAnalyzer, NuancedQuestions
+from retriever.QuestionsAndAnswers.naiveQuestions import NaiveQuestions
+from retriever.QuestionsAndAnswers.nuancedQuestions import PaperEmbeddingAnalyzer, NuancedQuestions
 import re
 
 load_dotenv()
@@ -15,9 +15,17 @@ load_dotenv()
 gemini_api_key = os.getenv("GEMINI_API_KEY")
 
 class QuestionAnswerer:
-    def __init__(self):
+    def __init__(self,  message_output=None):
         self.questions_list = []   
         self.relevant_papers_ids = [] 
+        self.message_output = message_output or print
+
+    def message(self, text):
+        """
+        Utility method to output messages
+        """
+        if self.message_output:
+            self.message_output(text)
 
     def extract_text_from_pdf(self, paper_id):
         pdf_path = f"./{paper_id}"
@@ -94,6 +102,7 @@ class QuestionAnswerer:
     
     def retrieve_naive(self, user_query): 
         print("Calling retrieve naive function")
+        self.message("❓ Generating questions based on multiple perspectives on the topic provided to compare the papers retrieved ... ")
         # Run Naive Question class which identifies relevant papers and creates naive questions
         naive_questions = NaiveQuestions()
         self.relevant_papers_ids = naive_questions.run(user_query=user_query)
@@ -126,6 +135,7 @@ class QuestionAnswerer:
     def generate_nuanced(self, external_contents, external_content_by_title):
         # This creates a file with nuanced for all relevant pappers 
         print("Generating nuanced questions.... ")
+        self.message("🧐 Generating questions to capture the nuances of the retrieved papers ... ")
         embedding_analyzer = PaperEmbeddingAnalyzer()
         analyzer = NuancedQuestions(embedding_analyzer)
         analyzer.run(external_contents, external_content_by_title)
@@ -167,14 +177,14 @@ class QuestionAnswerer:
         # Modify hereee
         self.generate_nuanced(all_external_content, external_content_by_title)
 
+        self.message("📝 Starting to answer the questions generated for each relevant paper ...")
         # Answer questions for each paper
         for paper_id in self.relevant_papers_ids: 
             # If local paper
             if paper_id not in external_content_by_title.keys():
-                print("\nTransforming paper {} in pdf to text ...".format(paper_id))
                 paper_text = self.extract_text_from_pdf(paper_id)
-                print("Answering questions for {}".format(paper_id))
-            
+                self.message("... ⏩️ Answering question for {} ...".format(paper_id))  
+
                 # Retrieve nuanced questions
                 nuanced = self.retrieve_nuanced(paper_id)
 
@@ -190,6 +200,7 @@ class QuestionAnswerer:
             else: 
                 print("\nReading extract from paper {} ...".format(paper_id))
                 paper_text = external_content_by_title[paper_id]
+                self.message("... ⏩️ Answering question for {} ...".format(paper_id))  
                 print("Answering questions for {}".format(paper_id))
             
                 # Retrieve nuanced questions
@@ -218,6 +229,7 @@ class QuestionAnswerer:
             else:
                 filtered_out += 1
 
+        self.message(f"🔻 Filtered out {filtered_out} papers because they could not answer the generated comparison questions. ")
         print("Filtered out ", filtered_out, "papers because of empty repsonses")
 
         # Save the filtered JSON

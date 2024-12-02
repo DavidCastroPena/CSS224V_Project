@@ -1,0 +1,12 @@
+{
+    "query": "I am the mayor of SF and I want to create a policy that fosters financial inclusion on the mission district. I want to implement this from a gender perspective focused on women that are substance users",
+    "option": "2",
+    "papers_folder": "papers",
+    "local_papers": [
+        "papers/TowardsInclusiveFinanceInIndonesia.pdf",
+        "papers/DigitalFinancialServicesToImproveFormalizedAccessAndInclusion.pdf",
+        "papers/GenderGapMobileBanking.pdf",
+        "papers/BankExpansionFirmDynamicsStructuralTransformations.pdf",
+        "papers/MeasuringFinancialInclusion.pdf"
+    ]
+}

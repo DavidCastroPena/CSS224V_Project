@@ -3,16 +3,16 @@ import os
 import re
 import datetime
 import requests
-from Chunkenizer import Chunkenizer
-from Embbedingator import Embbedingator
-from PerformQuery import PerformQuery
-from QuestionsAndAnswers.generateMemo import GenerateMemo
+from retriever.Chunkenizer import Chunkenizer
+from retriever.Embbedingator import Embbedingator
+from retriever.PerformQuery import PerformQuery
+from retriever.QuestionsAndAnswers.generateMemo import GenerateMemo
 from pathlib import Path 
 
 
 
 class Coordinator:
-    def __init__(self):
+    def __init__(self,  message_output=None):
         """
         Initialize the Coordinator with user inputs and pipeline components.
         Args:
@@ -20,7 +20,6 @@ class Coordinator:
         """
         # Get the current script's directory
         current_dir = Path(__file__).resolve().parent
-        print('hereeee', current_dir)
 
         # Navigate to the parent directory and then to the target file
         file_path = current_dir.parent / "user_inputs.json"
@@ -28,6 +27,9 @@ class Coordinator:
         # Open and load the JSON file
         with open(file_path, "r") as json_file:
             self.user_inputs = json.load(json_file)
+
+        # Store message output function
+        self.message_output = message_output or print
 
         self.query = self.user_inputs["query"]
         self.papers_folder = self.user_inputs["papers_folder"]
@@ -40,12 +42,20 @@ class Coordinator:
         self.embbedingator = Embbedingator()
         self.perform_query = PerformQuery()
 
+    def message(self, text):
+        """
+        Utility method to output messages
+        """
+        if self.message_output:
+            self.message_output(text)
+
     def process_local_papers(self):
         """
         Process and chunk local papers selected by the user.
         Returns:
             list: List of chunks from local papers.
         """
+        self.message("📂 Processing papers in local folder ...")
         chunks = []
         for paper in self.local_papers:
             file_path = paper
@@ -62,7 +72,7 @@ class Coordinator:
             list: List of all content.
             dict: Dictionary where keys are document titles and values are the concatenated contents.
         """
-        print("Retrieving external papers from Genie API...")
+        self.message("🔎 Retrieving external papers from Genie API ...")
         payload = {
             "query": [self.query],
             "num_blocks": 10,  # Number of results to retrieve
@@ -94,7 +104,7 @@ class Coordinator:
                 else:
                     content_by_title[title] = content
 
-            print(f"Retrieved {len(external_papers)} results from Genie API, which correspond to {len(content_by_title.keys())} paper_ids")
+            self.message(f"⛳️ I retrieved {len(external_papers)} relevant extracts from Genie API, which correspond to {len(content_by_title.keys())} papers.")
             return external_papers, all_contents, content_by_title
 
         except requests.exceptions.RequestException as e:
@@ -111,6 +121,7 @@ class Coordinator:
         Returns:
             list: List of chunks from external papers.
         """
+        self.message("⚙️ Processing papers retrieved form Genie API ...")
         chunks = []
         for paper in external_papers:
             paper_chunks = self.chunkenizer.chunk_text(paper["content"])
@@ -181,13 +192,19 @@ class Coordinator:
         """
         Execute the pipeline based on user inputs.
         """
-        
-        print("Processing local papers...")
+        self.message("🚀 Starting research pipeline ...")
         local_chunks = self.process_local_papers()
 
         print("Calculating similarities for local papers...")
         local_results = self.calculate_similarities(local_chunks)
         self.save_results(local_results, "local_papers_report")
+        all_external_contents = []
+        content_by_title = {}
+
+        if self.option != "2":
+            combined_results = local_results 
+            self.save_results(combined_results, "combined_report", include_url=True)
+
 
         if self.option == "2":
             print("Fetching and processing external papers...")
@@ -205,7 +222,7 @@ class Coordinator:
         
         
         # Generate memo
-        memo = GenerateMemo()
+        memo = GenerateMemo(message_output=self.message_output)
 
 
 

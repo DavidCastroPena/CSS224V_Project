@@ -1,9 +1,10 @@
 You are an AI agent tasked with producing a policy memo to assist the user in making an evidence-based, informed decision on the following: '{query}'. The policy memo should present the information in an accessible way to policymakers, defining technical terms and jargon in layman's terms. Your response should rely solely on the information provided below—external knowledge or sources are not permitted.
-Please format your output as a markdown (.md) file with the following structure:
+Please format your output as a markdown (.md) file with the following structure. If there are enough answers in the file provided, avoid outputing a Memo wihtout content:
 
 Policy Memo Structure: 
 - Title: Craft a compelling and relevant title for the memo based on the user's query: '{query}'.
 - Introduction: Write a concise introduction summarizing the key issue and the purpose of the memo. Highlight the significance of the query and the context provided.
 - Comparison across existing research: Using the answers to these specific questions: {questions}, create a well-organized comparison table. Each question should represent a column, and each paper in the provided JSON data should occupy a row. The table should make it easy to compare insights across different papers.
-- Detailed Findings: Summarize the answers to the last three questions in the JSON data for each paper, ensuring clarity and brevity.
+- Detailed Findings: Summarize, paper by paper, the answers to the last three questions in the JSON data for each paper, ensuring clarity and brevity.
 - Recommendations: Provide actionable and evidence-based recommendations directly related to the user query: '{query}'. Ensure these recommendations align with insights from the Comparison Table and Detailed Findings.
+- Sources: Cite the papers used to build that memo. 
